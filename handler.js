@@ -109,6 +109,10 @@ const main = async () => {
 };
 
 module.exports.handle = async event => {
+  // reset global vars
+  allLogGroups = [];
+  taskResults = {};
+
   await main();
   return {
     statusCode: 200
