@@ -1,0 +1,16 @@
+{
+  "name": "cw-to-s3-export",
+  "version": "1.0.0",
+  "description": "",
+  "main": "handler.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "aws-sdk": "^2.766.0",
+    "lodash": "^4.17.20",
+    "moment": "^2.29.0"
+  }
+}

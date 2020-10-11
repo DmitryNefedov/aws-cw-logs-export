@@ -1,0 +1,65 @@
+service: cw-to-s3-export
+provider:
+  name: aws
+  runtime: nodejs12.x
+  stage: ${opt:stage, env:STAGE}
+  region: ${opt:region, 'ap-southeast-2'}
+
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "logs:DescribeLogGroup"
+        - "logs:DescribeLogGroups"
+        - "logs:CreateExportTask"
+        - "logs:DescribeExportTasks"
+      Resource: "*"
+    - Effect: "Allow"
+      Action:
+        - "s3:*Object"
+      Resource: { Fn::Join: ['/', [{ Fn::GetAtt: [CWLogsExportBucket, Arn] }, '*']] }
+
+functions:
+  extractor:
+    handler: handler.handle
+    memorySize: 128
+    timeout: 900
+    environment:
+      LOGS_BUCKET_NAME: {Ref: CWLogsExportBucket}
+      MAX_RETENTION: 90
+      REGION: ${self:provider.region}
+
+resources:
+  Resources:
+    CWLogsExportBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketEncryption:
+          ServerSideEncryptionConfiguration:
+            - ServerSideEncryptionByDefault:
+                SSEAlgorithm: AES256
+        PublicAccessBlockConfiguration:
+          BlockPublicAcls: true
+          BlockPublicPolicy: true
+          IgnorePublicAcls: true
+          RestrictPublicBuckets: true
+
+    CWLogsExportBucketPolicy:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        Bucket: {Ref: CWLogsExportBucket}
+        PolicyDocument:
+          Statement:
+            - Action:
+                - s3:GetBucketAcl
+              Effect: Allow
+              Resource: { Fn::GetAtt: [CWLogsExportBucket, Arn] }
+              Principal:
+                Service:
+                  - 'logs.${self:provider.region}.amazonaws.com'
+            - Action:
+                - s3:PutObject
+              Effect: Allow
+              Resource: { Fn::Join: ['/', [{ Fn::GetAtt: [CWLogsExportBucket, Arn] }, '*']] }
+              Principal:
+                Service:
+                  - 'logs.${self:provider.region}.amazonaws.com'
